@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SYSTEM_PROMPT } from '@/lib/systemPrompt';
+import { SYSTEM_PROMPT_BASE, GENERATE_VARIASI_PROMPT } from '@/lib/systemPrompt';
 import { supabase } from '@/lib/supabase';
 import { supabaseServer } from '@/lib/supabase-server';
 
@@ -18,25 +18,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Scenario tidak ditemukan' }, { status: 404 });
     }
 
+    // Bangun prompt generator khusus untuk initial scene
+    const randomSeed = Math.floor(Math.random() * 100000);
+    const openingPromptContent = GENERATE_VARIASI_PROMPT
+      .replace('[title]', scenario.title)
+      .replace('[base_prompt]', scenario.base_prompt)
+      .replace('[random_seed]', randomSeed.toString());
+
     // Tentukan instruksi POV berdasarkan gender pembaca
     const genderInstruction =
       gender === 'male'
-        ? 'Pembaca adalah PRIA. Gunakan sudut pandang orang pertama pria (aku). Pasangan/love interest adalah WANITA yang dideskripsikan secara detail.'
+        ? 'Gender User: Pria. Target: Wanita.'
         : gender === 'female'
-        ? 'Pembaca adalah WANITA. Gunakan sudut pandang orang pertama wanita (aku). Pasangan/love interest adalah PRIA yang dideskripsikan secara detail.'
-        : 'Pembaca adalah WANITA. Gunakan sudut pandang orang pertama wanita (aku). Pasangan/love interest adalah WANITA LAIN yang dideskripsikan secara detail.';
+        ? 'Gender User: Wanita. Target: Pria.'
+        : 'Gender User: Wanita (Lesbian). Target: Wanita lain.';
 
-    // Build prompt pembuka
-    const openingPrompt = `Skenario: ${scenario.title}
+    const finalUserPrompt = `${openingPromptContent}
 ${genderInstruction}
-Base prompt: ${scenario.base_prompt}
 
-Mulai cerita dari awal. Scene pertama WAJIB:
-1. Perkenalkan karakter PASANGAN secara detail: nama Indonesia, usia, fisik, kepribadian, latar belakang
-2. Jelaskan konteks: siapa mereka satu sama lain, bagaimana bisa bertemu/berinteraksi
-3. Setting yang spesifik dan atmosferik
-4. Tunjukkan sinyal gairah awal yang SANGAT HALUS — pembaca harus membaca situasi dengan cermat
-Gunakan gaya prosa sastra Indonesia yang kaya dan detail, minimal 300 kata.`;
+Mulai ceritanya sekarang dari awal.`;
 
     // Panggil OpenRouter
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -50,8 +50,8 @@ Gunakan gaya prosa sastra Indonesia yang kaya dan detail, minimal 300 kata.`;
       body: JSON.stringify({
         model: 'qwen/qwen-2.5-72b-instruct',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: openingPrompt },
+          { role: 'system', content: SYSTEM_PROMPT_BASE },
+          { role: 'user', content: finalUserPrompt },
         ],
         temperature: 0.85,
         max_tokens: 1000,
@@ -76,7 +76,7 @@ Gunakan gaya prosa sastra Indonesia yang kaya dan detail, minimal 300 kata.`;
     }
 
     const history = [
-      { role: 'user', content: openingPrompt },
+      { role: 'user', content: finalUserPrompt },
       { role: 'assistant', content: content },
     ];
 
