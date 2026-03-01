@@ -93,13 +93,20 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || '{}';
-    // Clean potential markdown blocks
-    content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    // Robust JSON extraction
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      content = jsonMatch[0];
+    } else {
+      content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+    }
 
     let parsed;
     try {
       parsed = JSON.parse(content);
-    } catch {
+    } catch (parseError) {
+      console.error('JSON Parse Error. Raw content:', data.choices?.[0]?.message?.content);
       return NextResponse.json({ error: 'Format response AI tidak valid' }, { status: 500 });
     }
 
