@@ -1,0 +1,8 @@
+{
+  "name": "Intimora",
+  "short_name": "Intimora",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#FAF9F7",
+  "theme_color": "#E74C6B"
+}

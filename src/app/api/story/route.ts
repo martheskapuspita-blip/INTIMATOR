@@ -92,7 +92,9 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    let content = data.choices?.[0]?.message?.content || '{}';
+    // Clean potential markdown blocks
+    content = content.replace(/```json/g, '').replace(/```/g, '').trim();
 
     let parsed;
     try {
@@ -101,6 +103,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Format response AI tidak valid' }, { status: 500 });
     }
 
+    const sceneText = parsed.scene_text || parsed.text || parsed.story || 'Teks cerita tidak dapat dimuat. Silakan pilih opsi lagi.';
+    const choices = parsed.choices || [];
     const newHistoryEntry = { role: 'assistant', content };
     const updatedHistory = [...history, newHistoryEntry];
     const newArousalLevel = Math.max(0, Math.min(100, arousalLevel + (parsed.arousal_delta ?? 0)));
@@ -112,7 +116,7 @@ export async function POST(req: NextRequest) {
         .update({
           history: updatedHistory,
           arousal_level: newArousalLevel,
-          current_text: parsed.scene_text,
+          current_text: sceneText,
           status: parsed.status ?? 'ongoing',
           updated_at: new Date().toISOString(),
         })
@@ -124,9 +128,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      sceneText: parsed.scene_text,
+      sceneText: sceneText,
       arousalDelta: parsed.arousal_delta ?? 0,
-      choices: parsed.choices ?? [],
+      choices: choices,
       status: parsed.status ?? 'ongoing',
       educationTip: parsed.education_tip ?? null,
       newHistoryEntry,

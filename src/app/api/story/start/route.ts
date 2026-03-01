@@ -66,7 +66,9 @@ Mulai ceritanya sekarang dari awal.`;
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    let content = data.choices?.[0]?.message?.content || '{}';
+    // Clean potential markdown blocks
+    content = content.replace(/```json/g, '').replace(/```/g, '').trim();
 
     let parsed;
     try {
@@ -74,6 +76,9 @@ Mulai ceritanya sekarang dari awal.`;
     } catch {
       return NextResponse.json({ error: 'Format response AI tidak valid' }, { status: 500 });
     }
+
+    const sceneText = parsed.scene_text || parsed.text || parsed.story || 'Teks cerita tidak dapat dimuat. Silakan coba lagi.';
+    const choices = parsed.choices || [];
 
     const history = [
       { role: 'user', content: finalUserPrompt },
@@ -87,7 +92,7 @@ Mulai ceritanya sekarang dari awal.`;
         scenario_id: scenarioId,
         history,
         arousal_level: parsed.arousal_delta ?? 0,
-        current_text: parsed.scene_text,
+        current_text: sceneText,
         status: parsed.status ?? 'ongoing',
       })
       .select('id')
@@ -101,9 +106,9 @@ Mulai ceritanya sekarang dari awal.`;
     return NextResponse.json({
       sessionId: session.id,
       scenarioId,
-      sceneText: parsed.scene_text,
+      sceneText: sceneText,
       arousalDelta: parsed.arousal_delta ?? 0,
-      choices: parsed.choices ?? [],
+      choices: choices,
       status: parsed.status ?? 'ongoing',
       educationTip: parsed.education_tip ?? null,
       history,
