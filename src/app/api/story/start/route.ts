@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SYSTEM_PROMPT } from '@/lib/systemPrompt';
 import { supabase } from '@/lib/supabase';
+import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,15 +18,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Scenario tidak ditemukan' }, { status: 404 });
     }
 
-    // Generate session ID unik
-    const sessionId = crypto.randomUUID();
+    // Tentukan instruksi POV berdasarkan gender pembaca
+    const genderInstruction =
+      gender === 'male'
+        ? 'Pembaca adalah PRIA. Gunakan sudut pandang orang pertama pria (aku). Pasangan/love interest adalah WANITA yang dideskripsikan secara detail.'
+        : gender === 'female'
+        ? 'Pembaca adalah WANITA. Gunakan sudut pandang orang pertama wanita (aku). Pasangan/love interest adalah PRIA yang dideskripsikan secara detail.'
+        : 'Pembaca adalah WANITA. Gunakan sudut pandang orang pertama wanita (aku). Pasangan/love interest adalah WANITA LAIN yang dideskripsikan secara detail.';
 
     // Build prompt pembuka
-    const openingPrompt = `Scenario: ${scenario.title}
-Gender pembaca: ${gender}
+    const openingPrompt = `Skenario: ${scenario.title}
+${genderInstruction}
 Base prompt: ${scenario.base_prompt}
 
-Mulailah cerita dari awal. Scene pertama: perkenalkan setting dan karakter, lalu tunjukkan sinyal-sinyal gairah awal yang SANGAT HALUS. Jangan langsung eksplisit. Buat pembaca harus membaca situasi dengan cermat.`;
+Mulai cerita dari awal. Scene pertama WAJIB:
+1. Perkenalkan karakter PASANGAN secara detail: nama Indonesia, usia, fisik, kepribadian, latar belakang
+2. Jelaskan konteks: siapa mereka satu sama lain, bagaimana bisa bertemu/berinteraksi
+3. Setting yang spesifik dan atmosferik
+4. Tunjukkan sinyal gairah awal yang SANGAT HALUS — pembaca harus membaca situasi dengan cermat
+Gunakan gaya prosa sastra Indonesia yang kaya dan detail, minimal 300 kata.`;
 
     // Panggil OpenRouter
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -37,13 +48,13 @@ Mulailah cerita dari awal. Scene pertama: perkenalkan setting dan karakter, lalu
         'X-Title': 'Intimora',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct',
+        model: 'qwen/qwen-2.5-72b-instruct',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: openingPrompt },
         ],
-        temperature: 0.9,
-        max_tokens: 1500,
+        temperature: 0.85,
+        max_tokens: 1000,
         response_format: { type: 'json_object' },
       }),
     });
@@ -64,18 +75,38 @@ Mulailah cerita dari awal. Scene pertama: perkenalkan setting dan karakter, lalu
       return NextResponse.json({ error: 'Format response AI tidak valid' }, { status: 500 });
     }
 
+    const history = [
+      { role: 'user', content: openingPrompt },
+      { role: 'assistant', content: content },
+    ];
+
+    // Simpan sesi baru ke Supabase
+    const { data: session, error: sessionError } = await supabaseServer
+      .from('story_sessions')
+      .insert({
+        scenario_id: scenarioId,
+        history,
+        arousal_level: parsed.arousal_delta ?? 0,
+        current_text: parsed.scene_text,
+        status: parsed.status ?? 'ongoing',
+      })
+      .select('id')
+      .single();
+
+    if (sessionError || !session) {
+      console.error('Supabase insert error:', sessionError);
+      return NextResponse.json({ error: 'Gagal menyimpan sesi ke database' }, { status: 500 });
+    }
+
     return NextResponse.json({
-      sessionId,
+      sessionId: session.id,
       scenarioId,
       sceneText: parsed.scene_text,
       arousalDelta: parsed.arousal_delta ?? 0,
       choices: parsed.choices ?? [],
       status: parsed.status ?? 'ongoing',
       educationTip: parsed.education_tip ?? null,
-      history: [
-        { role: 'user', content: openingPrompt },
-        { role: 'assistant', content: content },
-      ],
+      history,
     });
   } catch (err) {
     console.error(err);

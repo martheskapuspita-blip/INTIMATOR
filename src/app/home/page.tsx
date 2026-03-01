@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStoryStore } from '@/store/storyStore';
 import { supabase } from '@/lib/supabase';
@@ -35,19 +35,20 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!gender) { router.push('/onboarding'); return; }
-    fetchScenarios();
-  }, [gender]);
-
-  const fetchScenarios = async () => {
+    let cancelled = false;
     setLoading(true);
-    const targets = genderMap[gender!] || ['male'];
-    const { data, error } = await supabase
+    const targets = genderMap[gender] || ['male'];
+    supabase
       .from('scenarios')
       .select('id, title, description, thumbnail, category, gender_target')
-      .in('gender_target', targets);
-    if (!error && data) setScenarios(data);
-    setLoading(false);
-  };
+      .in('gender_target', targets)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) setScenarios(data);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [gender, router]);
 
   const startStory = async (scenario: Scenario) => {
     setStarting(scenario.id);
@@ -91,6 +92,8 @@ export default function HomePage() {
   return (
     <main style={{
       minHeight: '100dvh',
+      overflowY: 'auto',
+      overflowX: 'hidden',
       paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
     }}>
       {/* Sticky top bar */}
@@ -98,11 +101,12 @@ export default function HomePage() {
         position: 'sticky',
         top: 0,
         zIndex: 30,
-        background: 'rgba(10,6,8,0.92)',
+        background: 'rgba(250,249,247,0.92)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-color)',
         padding: 'calc(12px + env(safe-area-inset-top)) 20px 12px',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
       }}>
         <div className="mobile-container" style={{
           display: 'flex',
@@ -131,6 +135,7 @@ export default function HomePage() {
               fontSize: '0.8rem',
               cursor: 'pointer',
               minHeight: '40px',
+              boxShadow: 'var(--shadow-soft)',
             }}
           >
             Ganti
@@ -197,7 +202,7 @@ export default function HomePage() {
                     <div style={{
                       width: '90px',
                       minHeight: '90px',
-                      background: `linear-gradient(135deg, #150910, #220f18)`,
+                      background: 'linear-gradient(135deg, var(--bg-secondary), #ede8e3)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',

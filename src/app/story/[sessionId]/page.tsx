@@ -31,7 +31,12 @@ export default function StoryPage() {
     setIsLoadingLocal(true);
     setLoading(true);
 
-    const userEntry = { role: 'user' as const, content: `Pilihan ${choice.id}: ${choice.text}` };
+    const userEntry = {
+      role: 'user' as const,
+      content: `Aku memilih: ${choice.id}. "${choice.text}"
+Level arousal saat ini: ${arousalLevel}/100
+Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
+    };
     appendHistory(userEntry);
 
     try {
@@ -40,9 +45,8 @@ export default function StoryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           history: [...history, userEntry],
-          choice: choice.id,
-          choiceText: choice.text,
           arousalLevel,
+          sessionId,
         }),
       });
       const data = await res.json();
@@ -100,12 +104,13 @@ export default function StoryPage() {
       {/* ── STICKY HEADER ── */}
       <div style={{
         flexShrink: 0,
-        background: 'rgba(10,6,8,0.95)',
+        background: 'rgba(250,249,247,0.95)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-color)',
         padding: 'calc(10px + env(safe-area-inset-top)) 20px 12px',
         zIndex: 20,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
       }}>
         {/* Top row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>

@@ -3,17 +3,19 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0a0608;
-  --bg-secondary: #120d10;
-  --bg-card: #1a1118;
+  --bg-primary: #faf9f7;
+  --bg-secondary: #f3f0ec;
+  --bg-card: #ffffff;
   --accent-red: #c0392b;
-  --accent-rose: #e74c6b;
-  --accent-gold: #c9a84c;
-  --text-primary: #f0e8eb;
-  --text-secondary: #b09aa5;
-  --text-muted: #6b5260;
-  --border-color: #2a1f25;
-  --glow-red: rgba(192, 57, 43, 0.3);
+  --accent-rose: #e0435f;
+  --accent-gold: #b07d2e;
+  --text-primary: #1a1018;
+  --text-secondary: #5a4050;
+  --text-muted: #9a8090;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.07);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --glow-red: rgba(192, 57, 43, 0.15);
 
   /* Mobile safe areas */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -30,6 +32,7 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 html, body {
@@ -37,15 +40,14 @@ html, body {
   color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
-  min-height: 100dvh; /* dynamic viewport height untuk mobile */
-  overflow-x: hidden;
-  overscroll-behavior: none;
+  min-height: 100dvh;
+  overscroll-behavior-x: none;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--accent-red); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(192, 57, 43, 0.3); border-radius: 2px; }
 
 /* Typography */
 .font-display { font-family: 'Playfair Display', serif; }
@@ -63,6 +65,7 @@ html, body {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 16px;
+  box-shadow: var(--shadow-soft);
   transition: all 0.25s ease;
 }
 
@@ -82,23 +85,25 @@ html, body {
   cursor: pointer;
   transition: all 0.2s ease;
   letter-spacing: 0.3px;
-  min-height: 52px; /* touch target */
+  min-height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
+  box-shadow: 0 4px 16px rgba(192, 57, 43, 0.25);
   -webkit-user-select: none;
   user-select: none;
 }
 
 .btn-primary:active {
-  opacity: 0.85;
+  opacity: 0.88;
   transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(192, 57, 43, 0.2);
 }
 
 .btn-secondary {
-  background: transparent;
+  background: white;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
   border-radius: 14px;
@@ -112,6 +117,7 @@ html, body {
   align-items: center;
   justify-content: center;
   width: 100%;
+  box-shadow: var(--shadow-soft);
 }
 
 .btn-secondary:active {
@@ -120,7 +126,7 @@ html, body {
   transform: scale(0.98);
 }
 
-/* Ambient glow background */
+/* Ambient glow background — softer on light theme */
 .bg-ambient {
   position: fixed;
   top: 0; left: 0;
@@ -133,11 +139,11 @@ html, body {
 .bg-ambient::before {
   content: '';
   position: absolute;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(192, 57, 43, 0.1) 0%, transparent 70%);
-  top: -100px;
-  right: -80px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(192, 57, 43, 0.06) 0%, transparent 70%);
+  top: -150px;
+  right: -100px;
   border-radius: 50%;
   animation: float 8s ease-in-out infinite;
 }
@@ -145,11 +151,11 @@ html, body {
 .bg-ambient::after {
   content: '';
   position: absolute;
-  width: 250px;
-  height: 250px;
-  background: radial-gradient(circle, rgba(231, 76, 107, 0.07) 0%, transparent 70%);
-  bottom: 100px;
-  left: -60px;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(176, 125, 46, 0.05) 0%, transparent 70%);
+  bottom: 80px;
+  left: -80px;
   border-radius: 50%;
   animation: float 10s ease-in-out infinite reverse;
 }
@@ -162,7 +168,7 @@ html, body {
 /* --- AROUSAL BAR --- */
 .arousal-bar {
   height: 5px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(0, 0, 0, 0.06);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -171,42 +177,45 @@ html, body {
   height: 100%;
   border-radius: 3px;
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(90deg, #c0392b, #e74c6b, #ff6b9d);
-  box-shadow: 0 0 8px rgba(231, 76, 107, 0.6);
+  background: linear-gradient(90deg, #c0392b, #e0435f, #f06080);
+  box-shadow: 0 0 8px rgba(224, 67, 95, 0.4);
 }
 
 /* --- CHOICE BUTTON --- */
 .choice-btn {
   width: 100%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: white;
+  border: 1.5px solid var(--border-color);
   border-radius: 14px;
   padding: 16px 16px;
   text-align: left;
   color: var(--text-primary);
   font-size: 0.92rem;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.1s;
+  transition: background 0.2s, border-color 0.2s, transform 0.1s, box-shadow 0.2s;
   line-height: 1.5;
-  min-height: 56px; /* touch target */
+  min-height: 56px;
   display: flex;
   align-items: center;
   gap: 12px;
+  box-shadow: var(--shadow-soft);
   -webkit-user-select: none;
   user-select: none;
 }
 
 .choice-btn:active {
-  background: var(--bg-card);
+  background: #fdf0f2;
   border-color: var(--accent-rose);
   transform: scale(0.985);
+  box-shadow: 0 2px 8px rgba(224, 67, 95, 0.15);
 }
 
 /* --- GENDER CARD --- */
 .gender-card {
-  background: var(--bg-card);
+  background: white;
   border: 1.5px solid var(--border-color);
   border-radius: 16px;
+  box-shadow: var(--shadow-soft);
   transition: all 0.2s ease;
   cursor: pointer;
   -webkit-user-select: none;
@@ -216,18 +225,19 @@ html, body {
 .gender-card:active,
 .gender-card.selected {
   border-color: var(--accent-rose);
-  background: rgba(192, 57, 43, 0.07);
-  box-shadow: 0 0 0 3px rgba(231, 76, 107, 0.15);
+  background: #fff5f7;
+  box-shadow: 0 0 0 3px rgba(224, 67, 95, 0.12), var(--shadow-card);
 }
 
 /* --- SCENARIO CARD --- */
 .scenario-card {
-  background: var(--bg-card);
+  background: white;
   border: 1px solid var(--border-color);
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-soft);
   -webkit-user-select: none;
   user-select: none;
   display: block;
@@ -238,6 +248,7 @@ html, body {
 .scenario-card:active {
   transform: scale(0.97);
   border-color: var(--accent-rose);
+  box-shadow: 0 4px 16px rgba(224, 67, 95, 0.15);
 }
 
 /* Animations */
@@ -251,8 +262,8 @@ html, body {
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 12px rgba(192, 57, 43, 0.4); }
-  50% { box-shadow: 0 0 28px rgba(231, 76, 107, 0.55); }
+  0%, 100% { box-shadow: 0 0 12px rgba(192, 57, 43, 0.2); }
+  50% { box-shadow: 0 0 28px rgba(224, 67, 95, 0.35); }
 }
 
 .pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
@@ -281,19 +292,19 @@ html, body {
 }
 
 .shimmer {
-  background: linear-gradient(90deg, var(--bg-card) 25%, #241a20 50%, var(--bg-card) 75%);
+  background: linear-gradient(90deg, #f0ede9 25%, #e8e5e1 50%, #f0ede9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
 }
 
-/* Bottom sheet (pilihan cerita) */
+/* Bottom sheet */
 .choices-sheet {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, var(--bg-primary) 85%, transparent);
+  background: linear-gradient(to top, var(--bg-primary) 80%, rgba(250,249,247,0));
   padding: 16px 20px calc(20px + var(--safe-bottom));
   z-index: 40;
   border-top: 1px solid var(--border-color);
@@ -312,10 +323,10 @@ html, body {
 .badge {
   font-size: 0.68rem;
   padding: 3px 8px;
-  background: rgba(192,57,43,0.12);
-  color: var(--accent-rose);
+  background: rgba(192, 57, 43, 0.08);
+  color: var(--accent-red);
   border-radius: 6px;
-  border: 1px solid rgba(192,57,43,0.2);
+  border: 1px solid rgba(192, 57, 43, 0.15);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;

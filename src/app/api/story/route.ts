@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SYSTEM_PROMPT } from '@/lib/systemPrompt';
+import { supabaseServer } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { history, choice, choiceText, arousalLevel } = await req.json();
+    const { history, arousalLevel, sessionId } = await req.json();
+    // history yang dikirim client sudah mengandung pilihan user terakhir (userEntry)
+    // JANGAN tambah userEntry lagi di sini karena akan jadi duplikat
 
-    // Build context dari history
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
-      ...history,
-      {
-        role: 'user',
-        content: `Pilihan saya: ${choice}. "${choiceText}"
-Level arousal saat ini: ${arousalLevel}/100
-
-Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi pilihan tersebut. Jika pilihan benar, naikkan ketegangan. Jika salah, tunjukkan reaksi penolakan halus.`,
-      },
+      ...history, // sudah termasuk: semua percakapan + pilihan user terbaru
     ];
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -27,10 +22,10 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi pilihan tersebut
         'X-Title': 'Intimora',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct',
+        model: 'qwen/qwen-2.5-72b-instruct',
         messages,
-        temperature: 0.9,
-        max_tokens: 1500,
+        temperature: 0.85,
+        max_tokens: 1000,
         response_format: { type: 'json_object' },
       }),
     });
@@ -51,13 +46,35 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi pilihan tersebut
       return NextResponse.json({ error: 'Format response AI tidak valid' }, { status: 500 });
     }
 
+    const newHistoryEntry = { role: 'assistant', content };
+    const updatedHistory = [...history, newHistoryEntry];
+    const newArousalLevel = Math.max(0, Math.min(100, arousalLevel + (parsed.arousal_delta ?? 0)));
+
+    // Update sesi di Supabase jika sessionId ada
+    if (sessionId) {
+      const { error: updateError } = await supabaseServer
+        .from('story_sessions')
+        .update({
+          history: updatedHistory,
+          arousal_level: newArousalLevel,
+          current_text: parsed.scene_text,
+          status: parsed.status ?? 'ongoing',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+      }
+    }
+
     return NextResponse.json({
       sceneText: parsed.scene_text,
       arousalDelta: parsed.arousal_delta ?? 0,
       choices: parsed.choices ?? [],
       status: parsed.status ?? 'ongoing',
       educationTip: parsed.education_tip ?? null,
-      newHistoryEntry: { role: 'assistant', content },
+      newHistoryEntry,
     });
   } catch (err) {
     console.error(err);
