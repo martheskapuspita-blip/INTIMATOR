@@ -1,17 +1,17 @@
-// Seed script: jalankan dengan `node seed.mjs`
-// Membersihkan data lama dan insert 35 skenario baru ke Supabase
-
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Baca .env.local
-const envContent = readFileSync(join(__dirname, '.env.local'), 'utf8');
+const envPath = path.resolve(__dirname, '.env.local');
+const envStr = fs.readFileSync(envPath, 'utf8');
+
 const env = Object.fromEntries(
-  envContent.split('\n')
+  envStr.split('\n')
     .filter(l => l.includes('=') && !l.startsWith('#'))
     .map(l => l.split('=').map(s => s.trim()))
 );
@@ -26,8 +26,9 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('YOUR_')) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const scenarios = [
   // ==================== HETERO PRIA (15) ====================
-  { id: 'adik_ipar_pria', title: 'Adik Ipar Cewek', description: 'Adik ipar yang selalu pakai daster tipis tanpa bra, memeknya sudah basah tiap kali kamu lewat dapur malam-malam. Tatap matanya penuh nafsu, paha gesek pelan, bisik "Kak... aku kepanasan nih" sambil gigit bibir – sinyal dia lagi sange berat, siap dimancing sampai memeknya banjir sebelum kontolmu masuk.', thumbnail: 'https://placeholder.com/200x300?text=Adik+Ipar+Cewek', category: 'hetero_pria', gender_target: 'male', base_prompt: 'Fantasi taboo: Adik Ipar Cewek. Perspektif pria. Mulai dari scene netral di rumah malam hari. Fokus slow-burn build-up minimal 5 scene: membaca sinyal gairah (napas cepat, tatap lama, gigit bibir, paha gesek, pupil melebar, suara serak, dll) dan memancing halus (kata ambigu, sentuhan tidak sengaja, bisik dekat telinga, proximity, teasing ringan). Kalau gagal membaca sinyal → cerita berakhir awkward tanpa sex. Kalau berhasil → naik ke foreplay ringan → edging → blended orgasm kalau pilihan benar. Bahasa Indonesia vulgar + slang.' },
+  { id: 'adik_ipar_pria', title: 'Adik Ipar Cewek', description: 'Adik ipar yang selalu pakai daster tipis tanpa bra, memeknya sudah basah tiap kali kamu lewat dapur malam-malam. Tatap matanya penuh nafsu, paha gesek pelan, bisik "Kak... aku kepanasan nih" sambil gigit bibir – sinyal dia lagi sange berat, siap dimancing sampai memeknya banjir sebelum kontolmu masuk.', thumbnail: 'https://placeholder.com/200x300?text=Adik+Ipar+Cewek', category: 'hetero_pria', gender_target: 'male', base_prompt: 'Fantasi taboo: Adik Ipar Cewek. Perspektif pria. Mulai dari scene netral di rumah malam hari. Fokus slow-burn build-up minimal 5 scene: membaca sinyal gairah (napas cepat, tatap lama, gigit bibir, paha gesek, pupil melebar, suara serak, dll) dan memancing halus (kata ambigu, sentuhan tidak sengaja, bisik dekat telinga, proximity, teasing ringan). Kalau gagal membaca sinyal -> cerita berakhir awkward tanpa sex. Kalau berhasil -> naik ke foreplay ringan -> edging -> blended orgasm kalau pilihan benar. Bahasa Indonesia vulgar + slang.' },
   { id: 'kakak_ipar_pria', title: 'Kakak Ipar Cewek', description: 'Kakak ipar seksi yang suka "kebetulan" buka kancing atas saat ngobrol, putingnya nongol samar-samar. Napasnya cepat, mata melotot ke kontolmu yang mulai keras di celana – dia lagi memancing supaya kamu berani pegang payudaranya yang montok sebelum ngentot dia di sofa.', thumbnail: 'https://placeholder.com/200x300?text=Kakak+Ipar+Cewek', category: 'hetero_pria', gender_target: 'male', base_prompt: 'Fantasi taboo: Kakak Ipar Cewek. Perspektif pria. Latar: acara keluarga atau ngobrol berdua di sofa. Fokus atraksi fisik, memancing respons, dan sentuhan "tidak sengaja", slow-burn 5 scene.' },
   { id: 'ibu_mertua_pria', title: 'Ibu Mertua', description: 'Ibu mertua masih hot, daster ketat bikin kontolmu tegang tiap dia lewat. Napas berat, tatap lama ke selangkanganmu, paha saling gesek – sinyal dia lagi pengen kontol menantunya masuk dalam memeknya yang sudah licin, tapi harus dimancing pelan-pelan dulu.', thumbnail: 'https://placeholder.com/200x300?text=Ibu+Mertua', category: 'hetero_pria', gender_target: 'male', base_prompt: 'Fantasi taboo: Ibu Mertua. Perspektif pria. Fokus di usia yang mature tapi nafsu besar. Slow-burn: membaca gestur, memancing lewat pujian dan kedekatan intim secara bertahap.' },
   { id: 'pembantu_art_pria', title: 'Pembantu Rumah (ART)', description: 'Pembantu muda rok pendek tanpa celana dalam, memeknya kelihatan samar saat membungkuk. Napasnya tersengal, mata genit ke kontolmu – dia lagi sange berat, siap dimancing sampai kamu angkat roknya dan masukin kontol ke memek basahnya di dapur.', thumbnail: 'https://placeholder.com/200x300?text=Pembantu+ART', category: 'hetero_pria', gender_target: 'male', base_prompt: 'Fantasi: ART Cewek. Perspektif pria. Posisi dominan. Mulai dengan instruksi biasa yang berkembang jadi ambigu. Sinyal gairah: membungkuk disengaja, curi pandang. Slow-burn build-up wajib.' },
@@ -69,23 +70,30 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 ];
 
 async function seed() {
-  console.log('🗑️  Menghapus data lama...');
-  await supabase.from('story_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-  const { error: delErr } = await supabase.from('scenarios').delete().neq('id', '___');
-  if (delErr) console.warn('  ⚠️ Delete warning:', delErr.message);
+  console.log('🌱 Memulai seeder database... menghapus data lama...');
+  
+  // Hapus semua data
+  const { error: dropSessionsErr } = await supabase.from('story_sessions').delete().neq('scenario_id', 'dummy_string');
+  if (dropSessionsErr) console.log('Error hapus sessions:', dropSessionsErr);
 
-  console.log('📥 Memasukkan 35 skenario...');
-  const { error, count } = await supabase
-    .from('scenarios')
-    .insert(scenarios, { count: 'exact' });
-
-  if (error) {
-    console.error('❌ Error:', error.message);
-    process.exit(1);
+  const { error: delErr } = await supabase.from('scenarios').delete().neq('id', 'dummy');
+  if (delErr) {
+    console.error('Gagal hapus data:', delErr);
+    return;
   }
 
-  console.log(`✅ Berhasil! ${count ?? scenarios.length} skenario berhasil dimasukkan.`);
-  console.log('   15 Hetero Pria | 10 Hetero Wanita | 10 Lesbian');
+  console.log('✨ Memasukkan 35 Skenario VULGAR SLOW-BURN PDF...');
+  
+  const { data, error } = await supabase
+    .from('scenarios')
+    .insert(scenarios)
+    .select();
+
+  if (error) {
+    console.error('Gagal insert data:', error);
+  } else {
+    console.log(`✅ Berhasil memasukkan ${data.length} skenario.`);
+  }
 }
 
 seed();

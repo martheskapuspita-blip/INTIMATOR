@@ -14,6 +14,7 @@ export default function StoryPage() {
 
   const [isLoading, setIsLoadingLocal] = useState(false);
   const [chosenId, setChosenId] = useState<string | null>(null);
+  const [isChoicesOpen, setIsChoicesOpen] = useState(true);
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -160,12 +161,16 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
       {/* ── SCROLLABLE STORY TEXT ── */}
       <div
         ref={textRef}
+        onClick={() => {
+          if (isChoicesOpen && choices.length > 0) setIsChoicesOpen(false);
+        }}
         style={{
           flex: 1,
           overflowY: 'auto',
           padding: '20px 20px 0',
           // padding bottom = choices sheet height so text isn't hidden behind it
-          paddingBottom: isEnded ? '80px' : `${CHOICES_SHEET_HEIGHT + 16}px`,
+          paddingBottom: isEnded ? '80px' : isChoicesOpen ? `${CHOICES_SHEET_HEIGHT + 40}px` : '80px',
+          transition: 'padding-bottom 0.3s ease',
         }}
       >
         {/* Loading shimmer */}
@@ -226,7 +231,7 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
                 <p style={{ color: 'var(--accent-gold)', fontSize: '0.7rem', fontWeight: '700', marginBottom: '4px', letterSpacing: '0.5px' }}>
                   EDUKASI
                 </p>
-                <p style={{ color: '#e8d5a0', fontSize: '0.85rem', lineHeight: '1.6' }}>
+                <p style={{ color: '#fff', fontSize: '0.85rem', lineHeight: '1.6', opacity: 0.9 }}>
                   {educationTip}
                 </p>
               </div>
@@ -274,7 +279,50 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
 
       {/* ── BOTTOM SHEET: CHOICES ── */}
       {!isLoading && !isEnded && choices.length > 0 && (
-        <div className="choices-sheet">
+        <div 
+          className="choices-sheet"
+          style={{
+            transform: isChoicesOpen ? 'translateY(0)' : 'translateY(calc(100% - 60px))',
+            transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            paddingTop: '20px',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+          }}
+        >
+          {/* Toggle Button */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: '-20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'var(--surface-light)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '20px',
+              padding: '6px 20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 -4px 12px rgba(0,0,0,0.5)',
+              zIndex: 10,
+            }}
+            onClick={() => setIsChoicesOpen(!isChoicesOpen)}
+          >
+            <span style={{ 
+              fontSize: '0.8rem', 
+              color: 'var(--text-secondary)',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}>
+              {isChoicesOpen ? 'Tutup Pilihan ↓' : 'Buka Pilihan ↑'}
+            </span>
+          </div>
+
           <p style={{
             color: 'var(--text-muted)',
             fontSize: '0.72rem',
@@ -282,15 +330,27 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
             letterSpacing: '1px',
             marginBottom: '10px',
             textAlign: 'center',
+            opacity: isChoicesOpen ? 1 : 0,
+            transition: 'opacity 0.2s',
           }}>
             Apa yang kamu lakukan?
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '8px',
+            opacity: isChoicesOpen ? 1 : 0,
+            transition: 'opacity 0.3s ease',
+            pointerEvents: isChoicesOpen ? 'auto' : 'none'
+          }}>
             {choices.map((choice) => (
               <button
                 key={choice.id}
                 className="choice-btn"
-                onClick={() => handleChoice(choice)}
+                onClick={() => {
+                  handleChoice(choice);
+                  setIsChoicesOpen(true);
+                }}
                 disabled={isLoading}
                 style={{
                   opacity: chosenId && chosenId !== choice.id ? 0.45 : 1,
@@ -312,7 +372,7 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
                 }}>
                   {choice.id}
                 </span>
-                <span style={{ flex: 1, fontSize: '0.88rem', lineHeight: '1.45' }}>
+                <span style={{ flex: 1, fontSize: '0.88rem', lineHeight: '1.45', textAlign: 'left' }}>
                   {choice.text}
                 </span>
               </button>
