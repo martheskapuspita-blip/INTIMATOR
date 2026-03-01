@@ -231,7 +231,7 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
                 <p style={{ color: 'var(--accent-gold)', fontSize: '0.7rem', fontWeight: '700', marginBottom: '4px', letterSpacing: '0.5px' }}>
                   EDUKASI
                 </p>
-                <p style={{ color: '#fff', fontSize: '0.85rem', lineHeight: '1.6', opacity: 0.9 }}>
+                <p style={{ color: '#ff4d4d', fontSize: '0.85rem', lineHeight: '1.6', fontWeight: 500 }}>
                   {educationTip}
                 </p>
               </div>
@@ -299,7 +299,7 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
               top: '-20px',
               left: '50%',
               transform: 'translateX(-50%)',
-              background: 'var(--surface-light)',
+              background: '#ffffff',
               border: '1px solid var(--border-color)',
               borderRadius: '20px',
               padding: '6px 20px',
@@ -314,8 +314,8 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
           >
             <span style={{ 
               fontSize: '0.8rem', 
-              color: 'var(--text-secondary)',
-              fontWeight: 600,
+              color: '#333333',
+              fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '1px'
             }}>

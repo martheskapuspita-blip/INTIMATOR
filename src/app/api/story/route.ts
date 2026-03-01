@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
         model: 'qwen/qwen-2.5-72b-instruct',
         messages,
         temperature: 0.85,
-        max_tokens: 1000,
+        max_tokens: 2500,
         response_format: { type: 'json_object' },
       }),
     });

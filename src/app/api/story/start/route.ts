@@ -54,7 +54,7 @@ Mulai ceritanya sekarang dari awal.`;
           { role: 'user', content: finalUserPrompt },
         ],
         temperature: 0.85,
-        max_tokens: 1000,
+        max_tokens: 2500,
         response_format: { type: 'json_object' },
       }),
     });
