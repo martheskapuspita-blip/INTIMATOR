@@ -12,7 +12,8 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
-    const { history, arousalLevel, sessionId } = await req.json();
+    const { history, arousalLevel, hotMeter: clientHotMeter, sessionId } = await req.json();
+    const currentHotMeter = clientHotMeter ?? arousalLevel ?? 0;
     
     // Ambil data sesi untuk tahu scenario & gendertarget
     const { data: session } = await supabaseServer
@@ -37,20 +38,20 @@ export async function POST(req: NextRequest) {
     // BANGUN DYNAMIC SYSTEM PROMPT
     let injectedPrompt = SYSTEM_PROMPT_BASE;
 
-    // 1. Cek Advanced Edging (arousal >= 65 + kata kunci)
+    // 1. Cek Advanced Edging (hot meter >= 65 + kata kunci)
     const isEdgingKeywords = ['tahan', 'pelanin', 'napas', 'breath', 'eye contact', 'tatap mata', 'bisik', 'whisper'].some(k => latestUserChoice.includes(k));
-    if (arousalLevel >= 65 && isEdgingKeywords) {
+    if (currentHotMeter >= 65 && isEdgingKeywords) {
       injectedPrompt += '\n\n' + ADVANCED_EDGING_PROMPT;
     }
 
-    // 2. Cek Scissoring (arousal >= 65 + kata kunci khusus lesbian)
+    // 2. Cek Scissoring (hot meter >= 65 + kata kunci khusus lesbian)
     const isScissoringKeywords = ['scissor', 'tribbing', 'gesek memek', 'saling gesek'].some(k => latestUserChoice.includes(k));
-    if (arousalLevel >= 65 && isScissoringKeywords && genderTarget === 'female_lesbian') {
+    if (currentHotMeter >= 65 && isScissoringKeywords && genderTarget === 'female_lesbian') {
       injectedPrompt += '\n\n' + SCISSORING_BLENDED_PROMPT;
     }
 
-    // 3. Cek Blended Orgasm (arousal >= 75 + stimulasi ganda)
-    if (arousalLevel >= 75) {
+    // 3. Cek Blended Orgasm (hot meter >= 75 + stimulasi ganda)
+    if (currentHotMeter >= 75) {
       const isDualStim = ['klit', 'g-spot', 'jari', 'prostate', 'pantat', 'lidah', 'payudara', 'puting'].some(k => latestUserChoice.includes(k));
       if (isDualStim || isScissoringKeywords) {
         if (genderTarget === 'female_lesbian') {
@@ -114,19 +115,31 @@ export async function POST(req: NextRequest) {
     const choices = parsed.choices || [];
     const newHistoryEntry = { role: 'assistant', content };
     const updatedHistory = [...history, newHistoryEntry];
-    const newArousalLevel = Math.max(0, Math.min(100, arousalLevel + (parsed.arousal_delta ?? 0)));
+    
+    // Support both old arousal_delta and new hot_delta field names
+    const hotDelta = parsed.hot_delta ?? parsed.arousal_delta ?? 0;
+    const newHotMeter = Math.max(0, Math.min(100, currentHotMeter + hotDelta));
+    const newStatus = parsed.status ?? 'ongoing';
+    const partNumber = parsed.part_number ?? 1;
+    const eduLesson = parsed.edu_lesson ?? null;
+    const badEndReason = parsed.bad_end_reason ?? null;
 
     // Update sesi di Supabase jika sessionId ada
     if (sessionId) {
+      const updatePayload: Record<string, unknown> = {
+        history: updatedHistory,
+        arousal_level: newHotMeter,
+        current_text: sceneText,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      };
+      // Save extra fields if columns exist (graceful degradation)
+      if (partNumber) updatePayload.current_part = partNumber;
+      if (badEndReason) updatePayload.bad_end_reason = badEndReason;
+      
       const { error: updateError } = await supabaseServer
         .from('story_sessions')
-        .update({
-          history: updatedHistory,
-          arousal_level: newArousalLevel,
-          current_text: sceneText,
-          status: parsed.status ?? 'ongoing',
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', sessionId);
 
       if (updateError) {
@@ -136,10 +149,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       sceneText: sceneText,
-      arousalDelta: parsed.arousal_delta ?? 0,
+      hotDelta: hotDelta,
+      arousalDelta: hotDelta, // backward compat
       choices: choices,
-      status: parsed.status ?? 'ongoing',
+      status: newStatus,
+      partNumber: partNumber,
+      eduLesson: eduLesson,
       educationTip: parsed.education_tip ?? null,
+      badEndReason: badEndReason,
       newHistoryEntry,
     });
   } catch (err) {

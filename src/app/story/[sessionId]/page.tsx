@@ -8,13 +8,14 @@ export default function StoryPage() {
   const router = useRouter();
   const {
     gender, sessionId, arousalLevel, currentText, choices,
-    history, status, educationTip,
-    setStoryState, appendHistory, setLoading, resetStory,
+    history, status, educationTip, eduLesson, eduPoints, partNumber, badEndReason,
+    setStoryState, appendHistory, addEduPoints, setLoading, resetStory,
   } = useStoryStore();
 
   const [isLoading, setIsLoadingLocal] = useState(false);
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [isChoicesOpen, setIsChoicesOpen] = useState(true);
+  const [lessonRead, setLessonRead] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +48,7 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
         body: JSON.stringify({
           history: [...history, userEntry],
           arousalLevel,
+          hotMeter: arousalLevel,
           sessionId,
         }),
       });
@@ -61,11 +63,15 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
 
       setStoryState({
         text: data.sceneText,
-        arousalDelta: data.arousalDelta,
+        arousalDelta: data.arousalDelta ?? data.hotDelta ?? 0,
         choices: data.choices,
         status: data.status,
         educationTip: data.educationTip,
+        eduLesson: data.eduLesson,
+        partNumber: data.partNumber,
+        badEndReason: data.badEndReason,
       });
+      setLessonRead(false);
       if (data.newHistoryEntry) appendHistory(data.newHistoryEntry);
     } catch {
       alert('Terjadi kesalahan koneksi.');
@@ -74,7 +80,15 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
     setChosenId(null);
   };
 
-  const isEnded = status === 'awkward_end' || status === 'orgasm_end';
+  const isEnded = status === 'awkward_end' || status === 'orgasm_end' || status === 'bad_end';
+
+  const partLabels: Record<number, string> = {
+    1: '🌡️ Part 1 – Pendekatan',
+    2: '🔥 Part 2 – Tease',
+    3: '💥 Part 3 – Klimaks',
+    4: '✨ Part 4 – Afterglow',
+    5: '🌙 Part 5 – Penutup',
+  };
 
   // Choices sheet height estimate: 56px per choice + header
   const CHOICES_SHEET_HEIGHT = choices.length > 0 ? choices.length * 68 + 80 : 0;
@@ -144,10 +158,39 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
             padding: '4px 8px',
             borderRadius: '8px',
             border: arousalLevel >= 70 ? '1px solid rgba(231,76,107,0.2)' : '1px solid transparent',
+            animation: arousalLevel >= 75 ? 'pulse 1s infinite' : 'none',
           }}>
             {arousalLabel} · {arousalLevel}%
           </span>
+          {/* Edu Points */}
+          {eduPoints > 0 && (
+            <span style={{
+              fontSize: '0.7rem',
+              fontWeight: '700',
+              color: '#2ecc71',
+              background: 'rgba(46,204,113,0.1)',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              border: '1px solid rgba(46,204,113,0.2)',
+            }}>
+              🎓 {eduPoints}
+            </span>
+          )}
         </div>
+
+        {/* Part Indicator */}
+        {partLabels[partNumber] && (
+          <div style={{
+            fontSize: '0.68rem',
+            fontWeight: '600',
+            color: 'var(--text-muted)',
+            letterSpacing: '0.5px',
+            marginBottom: '8px',
+            textAlign: 'center',
+          }}>
+            {partLabels[partNumber]}
+          </div>
+        )}
 
         {/* Arousal bar */}
         <div className="arousal-bar">
@@ -239,7 +282,52 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
           </div>
         )}
 
-        {/* End state */}
+        {/* Edu Lesson Card (after wrong choice) */}
+        {!isLoading && eduLesson && (
+          <div className="fade-in" style={{
+            marginTop: '16px',
+            background: 'rgba(41,128,185,0.08)',
+            border: '1px solid rgba(41,128,185,0.3)',
+            borderRadius: '12px',
+            padding: '14px',
+          }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>📖</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ color: '#3498db', fontSize: '0.7rem', fontWeight: '700', marginBottom: '4px', letterSpacing: '0.5px' }}>
+                  PELAJARAN
+                </p>
+                <p style={{ color: '#5dade2', fontSize: '0.85rem', lineHeight: '1.6' }}>
+                  {eduLesson}
+                </p>
+                {!lessonRead && (
+                  <button
+                    onClick={() => { addEduPoints(10); setLessonRead(true); }}
+                    style={{
+                      marginTop: '10px',
+                      background: 'rgba(41,128,185,0.2)',
+                      border: '1px solid rgba(41,128,185,0.4)',
+                      borderRadius: '8px',
+                      color: '#3498db',
+                      fontSize: '0.78rem',
+                      fontWeight: '700',
+                      padding: '6px 14px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✅ Baca & Pelajari (+10 Edu Points)
+                  </button>
+                )}
+                {lessonRead && (
+                  <p style={{ marginTop: '8px', color: '#2ecc71', fontSize: '0.75rem', fontWeight: '600' }}>
+                    ✓ Dipelajari! +10 🎓
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {!isLoading && isEnded && (
           <div className="fade-in" style={{
             marginTop: '24px',
@@ -247,23 +335,27 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
             padding: '32px 16px',
             background: status === 'orgasm_end'
               ? 'linear-gradient(135deg, rgba(192,57,43,0.08), rgba(231,76,107,0.05))'
+              : status === 'bad_end'
+              ? 'linear-gradient(135deg, rgba(44,62,80,0.3), rgba(192,57,43,0.15))'
               : 'rgba(30,20,25,0.4)',
             borderRadius: '20px',
-            border: `1px solid ${status === 'orgasm_end' ? 'rgba(231,76,107,0.2)' : 'var(--border-color)'}`,
+            border: `1px solid ${status === 'orgasm_end' ? 'rgba(231,76,107,0.2)' : status === 'bad_end' ? 'rgba(192,57,43,0.4)' : 'var(--border-color)'}`,
           }}>
             <div style={{ fontSize: '3rem', marginBottom: '10px' }}>
-              {status === 'orgasm_end' ? '💥' : '😬'}
+              {status === 'orgasm_end' ? '💥' : status === 'bad_end' ? '💀' : '😬'}
             </div>
             <h2 className="font-display" style={{
               fontSize: '1.3rem',
-              color: status === 'orgasm_end' ? 'var(--accent-rose)' : 'var(--text-secondary)',
+              color: status === 'orgasm_end' ? 'var(--accent-rose)' : status === 'bad_end' ? '#e74c3c' : 'var(--text-secondary)',
               marginBottom: '6px',
             }}>
-              {status === 'orgasm_end' ? 'Bliss Tercapai ✨' : 'Kesempatan Terlepas'}
+              {status === 'orgasm_end' ? 'Bliss Tercapai ✨' : status === 'bad_end' ? 'KETAHUAN! 🚭 Game Over' : 'Kesempatan Terlepas'}
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '24px' }}>
               {status === 'orgasm_end'
-                ? 'Luar biasa! Kamu berhasil membaca sinyal dengan sempurna.'
+                ? 'Luar biasa! Kamu berhasil membaca sinyal dengan sempurna dan mengakhiri fantasi dengan klimaks yang indah.'
+                : status === 'bad_end'
+                ? (badEndReason || 'Situasi meledak dan kamu ketahuan. Selalu baca risiko sebelum melanjutkan.')
                 : 'Kamu salah membaca sinyal. Coba lagi dengan lebih peka!'}
             </p>
             <button
