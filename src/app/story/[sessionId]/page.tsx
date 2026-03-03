@@ -294,10 +294,10 @@ Lanjutkan cerita berdasarkan pilihan ini. Tunjukkan konsekuensi yang sesuai.`,
             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>📖</span>
               <div style={{ flex: 1 }}>
-                <p style={{ color: '#3498db', fontSize: '0.7rem', fontWeight: '700', marginBottom: '4px', letterSpacing: '0.5px' }}>
+                <p style={{ color: '#1a6fa8', fontSize: '0.7rem', fontWeight: '700', marginBottom: '4px', letterSpacing: '0.5px' }}>
                   PELAJARAN
                 </p>
-                <p style={{ color: '#5dade2', fontSize: '0.85rem', lineHeight: '1.6' }}>
+                <p style={{ color: '#1a2a3a', fontSize: '0.85rem', lineHeight: '1.6', fontWeight: 500 }}>
                   {eduLesson}
                 </p>
                 {!lessonRead && (
